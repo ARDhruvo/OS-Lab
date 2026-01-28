@@ -1,0 +1,6 @@
+
+*.o
+02_Process_Scheduling/Templates/FCFS
+02_Process_Scheduling/Templates/RoundRobin
+02_Process_Scheduling/Templates/SRTN
+02_Process_Scheduling/Templates/SJF
