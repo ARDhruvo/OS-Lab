@@ -58,94 +58,6 @@ void FIFO(int page, vector<int> &frames, int pageFaultCount)
     frames[index] = page;
 }
 
-map<int, int> optUpdate(map<int, int> &pageTable, vector<int> &refStr, int i)
-{
-    for (int j = 0; j >= i; j++)
-    {
-        pageTable[refStr[j]] = j; // Updating the last used index of the page for O(F) access
-    }
-    return pageTable;
-}
-
-int optSearch(int page, vector<int> &refStr, int i)
-{
-    int optIndex = inf;
-    for (int j = i; j < refStr.size(); j++)
-    {
-        if (refStr[j] == page)
-        {
-            optIndex = j;
-            break;
-        }
-    }
-    return optIndex;
-}
-
-void Optimal(int page, vector<int> &frames, vector<int> &refStr, int currentIndex)
-{
-    // 1. If there is an empty frame, use it
-    for (int f = 0; f < frames.size(); f++)
-    {
-        if (frames[f] == empty)
-        {
-            frames[f] = page;
-            return;
-        }
-    }
-
-    // 2. No empty frame → find victim
-    int victim = 0;    // frame index to replace
-    int farthest = -1; // largest next use seen so far
-
-    for (int f = 0; f < frames.size(); f++)
-    {
-        // Look for the next occurrence of frames[f] after currentIndex
-        int nextUse = optSearch(frames[f], refStr, currentIndex + 1);
-        if (nextUse > farthest)
-        { // we want the largest
-            farthest = nextUse;
-            victim = f;
-        }
-    }
-
-    frames[victim] = page;
-}
-
-void LRU(int page, vector<int> &frames, map<int, int> &pageTable, vector<int> &refStr, int i)
-{
-    bool replaced = false; // For checking if any frame is empty
-    for (int f = 0; f < frames.size(); f++)
-    {
-        if (frames[f] == empty)
-        {
-            frames[f] = page; // Placing the new page in the empty frame
-            replaced = true;
-            break;
-        }
-    }
-
-    if (!replaced)
-    {
-        int lruPage = frames[0];
-        int lruIndex = 0;
-        for (int f = 0; f < frames.size(); f++)
-        {
-            if (pageTable[frames[f]] < pageTable[lruPage])
-            {
-                lruPage = frames[f]; // This ensures O(F) search
-                lruIndex = f;
-                /*
-                 * The main idea is that by using a previously hashed map
-                 * we only need to check the hash map of the pages in the frame
-                 * Since searching through the frames is O(F) and accessing the last used index of a page is O(1)
-                 * The overall time complexity of finding the LRU page is O(F)
-                 */
-            }
-        }
-        frames[lruIndex] = page;
-    }
-}
-
 int pageReplacement(vector<int> &frames, map<int, int> &lruPageTable, vector<int> &refStr)
 {
 
@@ -168,9 +80,7 @@ int pageReplacement(vector<int> &frames, map<int, int> &lruPageTable, vector<int
 
         if (pageFault)
         {
-            // FIFO(page, frames, pageFaultCount);
-            // Optimal(page, frames, refStr, i);
-            LRU(page, frames, lruPageTable, refStr, i);
+            FIFO(page, frames, pageFaultCount);
 
             pageFaultCount++;
             pageFaults(i, frames, refStr, pageFaultCount);
