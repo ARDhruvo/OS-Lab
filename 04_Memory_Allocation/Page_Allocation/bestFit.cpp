@@ -61,37 +61,6 @@ void blockPrint(vector<int> &partitions, vector<int> &allocation, vector<int> &p
     }
 }
 
-void firstFit(vector<int> &partitions, vector<int> &processes, vector<int> &allocation, vector<int> &fragError)
-{
-    for (int i = 0; i < processes.size(); i++)
-    {
-        bool assigned = false;
-        for (int j = 0; j < partitions.size(); j++)
-        {
-            if (partitions[j] >= processes[i])
-            {
-                allocation[i] = j;
-                partitions[j] -= processes[i];
-                assigned = true;
-                break;
-            }
-        }
-        if (!assigned)
-        {
-            cout << "Process " << i + 1 << " cannot be allocated." << endl;
-            fragError.push_back(processes[i]);
-        }
-    }
-
-    if (!fragError.empty())
-    {
-        fragPrint(fragError);
-    }
-
-    // allocPrint(processes, allocation);
-    blockPrint(partitions, allocation, processes);
-}
-
 void bestFit(vector<int> &partitions, vector<int> &processes, vector<int> &allocation, vector<int> &fragError)
 {
     for (int i = 0; i < processes.size(); i++)
@@ -151,7 +120,6 @@ int main()
     }
     paragraph;
 
-    // firstFit(partitions, processes, allocation, fragError);
     bestFit(partitions, processes, allocation, fragError);
     return 0;
 }
