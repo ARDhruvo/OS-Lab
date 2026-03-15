@@ -85,6 +85,10 @@ void bestFit(vector<int> &partitions, vector<int> &processes, vector<int> &alloc
         {
             cout << "Process " << i + 1 << " cannot be allocated." << endl;
             fragError.push_back(processes[i]);
+            /*
+            blockPrint(partitions, allocation, processes);
+            return;
+            */
         }
     }
 
