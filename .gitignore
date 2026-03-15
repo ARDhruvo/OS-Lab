@@ -5,3 +5,5 @@
 02_Process_Scheduling/Templates/SRTN
 02_Process_Scheduling/Templates/SJF
 04_Memory_Allocation/Page_Replacement/LRU
+04_Memory_Allocation/Page_Replacement/ultTemplate
+04_Memory_Allocation/Page_Replacement/optimal
