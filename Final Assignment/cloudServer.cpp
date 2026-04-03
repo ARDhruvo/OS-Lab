@@ -22,6 +22,10 @@ using namespace std;
 9
 3
 5
+4 5 1 2 4 3 5 2
+1 2 3 4 1 2 5 1
+3 1 2 3 5 4 2 1
+2 3 2 1 5 2 4 3
 */
 
 struct process
@@ -136,6 +140,10 @@ struct ComparePriority
 vector<int> PriorityScheduling(vector<process> &processes, int n)
 {
     vector<int> completionIndex(n, none);
+
+    vector<int> completionTime(n, 0); // store completion time for each process
+    double totalTAT = 0, totalWT = 0;
+
     vector<process> sorted = processes;
     for (int i = 0; i < n; i++)
     {
@@ -227,6 +235,11 @@ vector<int> PriorityScheduling(vector<process> &processes, int n)
         {
             time += remBT[pidIdx];
             remBT[pidIdx] = 0;
+            sorted[pidIdx].cT = time;
+            sorted[pidIdx].tAT = sorted[pidIdx].cT - sorted[pidIdx].aT;
+            sorted[pidIdx].wT = sorted[pidIdx].tAT - sorted[pidIdx].bT;
+            totalTAT += sorted[pidIdx].tAT;
+            totalWT += sorted[pidIdx].wT;
             completionIndex[completed] = pidIdx;
             completed++;
         }
@@ -238,6 +251,13 @@ vector<int> PriorityScheduling(vector<process> &processes, int n)
     {
         cout << i << "\t\t";
     }
+    paragraph;
+
+    double avgTAT = totalTAT / n;
+    double avgWT = totalWT / n;
+
+    cout << "\nAverage Turnaround Time = \t" << avgTAT << endl;
+    cout << "Average Waiting Time   = \t" << avgWT << endl;
     paragraph;
 
     return completionIndex;
@@ -284,13 +304,41 @@ void LRU(int page, vector<int> &frames, map<int, int> &pageTable, vector<int> &r
     }
 }
 
-int pageReplacement(vector<int> &frames, map<int, int> &pageTable, vector<int> &refStr)
+void printFrames(vector<int> &frames)
 {
+    cout << "[";
+    for (int i = 0; i < frames.size() - 1; i++)
+    {
+        if (frames[i] != none) // For non empty frame
+        {
+            cout << frames[i] << ", ";
+        }
+        else // For empty frame
+        {
+            cout << "_, ";
+        }
+    }
+    if (frames[frames.size() - 1] != none) // For non empty frame
+    {
+        cout << frames[frames.size() - 1];
+    }
+    else // For empty frame
+    {
+        cout << "_";
+    }
+    cout << "]" << endl;
+}
+
+int pageReplacement(int procId, vector<int> frames, map<int, int> &pageTable, vector<int> &refStr)
+{
+    cout << "Process P" << procId << "| Frames: ";
+    printFrames(frames);
 
     int pageFaultCount = 0;
     for (int i = 0; i < refStr.size(); i++)
     {
         int page = refStr[i];
+        cout << "Page " << page << " -> ";
         pageTable[page] = i; // Updating the last used index of the page for O(F) access
 
         bool pageFault = true; // Assuming page fault until we find the page in the frames
@@ -300,6 +348,8 @@ int pageReplacement(vector<int> &frames, map<int, int> &pageTable, vector<int> &
             if (frames[i] == page)
             {
                 pageFault = false; // Page Hit; The page is already loaded in the frames
+                cout << "HIT\t|\tFrames: ";
+                printFrames(frames);
                 break;
             }
         }
@@ -308,10 +358,85 @@ int pageReplacement(vector<int> &frames, map<int, int> &pageTable, vector<int> &
         {
             pageFaultCount++;
             LRU(page, frames, pageTable, refStr, i);
+
+            cout << "FAULT\t|\tFrames: ";
+            printFrames(frames);
             // pageFaults(i, frames, refStr, pageFaultCount);
         }
     }
     return pageFaultCount;
+}
+
+void memoryManagement(vector<int> &scheduledProcesses)
+{
+    cout << "--- Memory Management (LRU Frames = 3) ---" << endl;
+
+    int frameSize = 3;
+    int refStrSize = 8;
+    int pageFaultCount = 0;
+    int totalPageFaults = 0;
+
+    map<int, int> pageTable;             // <page number, last used index> for keeping track of page usage
+    vector<int> frames(frameSize, none); // Frames are always empty at the start
+    vector<int> refStr(refStrSize);
+
+    cout << "P" << scheduledProcesses[0] << " finished first. Enter 8 page requests:" << endl;
+    for (int i = 0; i < refStrSize; i++)
+    {
+        cin >> refStr[i];
+        pageTable[refStr[i]] = none; // Initializing all pages as not used
+    }
+    paragraph;
+
+    // Main Simulation:
+    pageFaultCount = pageReplacement(scheduledProcesses[0], frames, pageTable, refStr);
+    cout << "P" << scheduledProcesses[0] << " Page Faults: " << pageFaultCount << endl;
+    totalPageFaults += pageFaultCount;
+    paragraph;
+
+    cout << "P" << scheduledProcesses[1] << " finished second. Enter 8 page requests:" << endl;
+    for (int i = 0; i < refStrSize; i++)
+    {
+        cin >> refStr[i];
+        pageTable[refStr[i]] = none; // Initializing all pages as not used
+    }
+    paragraph;
+
+    // Main Simulation:
+    pageFaultCount = pageReplacement(scheduledProcesses[1], frames, pageTable, refStr);
+    cout << "P" << scheduledProcesses[1] << " Page Faults: " << pageFaultCount << endl;
+    totalPageFaults += pageFaultCount;
+    paragraph;
+
+    cout << "P" << scheduledProcesses[2] << " finished third. Enter 8 page requests:" << endl;
+    for (int i = 0; i < refStrSize; i++)
+    {
+        cin >> refStr[i];
+        pageTable[refStr[i]] = none; // Initializing all pages as not used
+    }
+    paragraph;
+
+    // Main Simulation:
+    pageFaultCount = pageReplacement(scheduledProcesses[2], frames, pageTable, refStr);
+    cout << "P" << scheduledProcesses[2] << " Page Faults: " << pageFaultCount << endl;
+    totalPageFaults += pageFaultCount;
+    paragraph;
+
+    cout << "P" << scheduledProcesses[3] << " finished fourth. Enter 8 page requests:" << endl;
+    for (int i = 0; i < refStrSize; i++)
+    {
+        cin >> refStr[i];
+        pageTable[refStr[i]] = none; // Initializing all pages as not used
+    }
+    paragraph;
+
+    // Main Simulation:
+    pageFaultCount = pageReplacement(scheduledProcesses[3], frames, pageTable, refStr);
+    cout << "P" << scheduledProcesses[3] << " Page Faults: " << pageFaultCount << endl;
+    totalPageFaults += pageFaultCount;
+    paragraph;
+
+    cout << "TOTAL PAGE FAULTS: " << totalPageFaults << endl;
 }
 
 int main()
@@ -405,7 +530,8 @@ int main()
         paragraph;
 
         vector<int> scheduledProcesses = scheduling(processes, n);
-        // pageReplacement(scheduledProcesses);
+
+        memoryManagement(scheduledProcesses);
     }
 
     return 0;
