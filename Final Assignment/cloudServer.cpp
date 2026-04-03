@@ -29,25 +29,24 @@ struct process
     int pid;
     int aT;
     int bT;
-    int priority;
-    // int wT;
-    // int tAT;
+    int totalNeed;
+    int priority = none;
+    int cT;
+    int wT;
+    int tAT;
 };
 
-void printNeedMatrix(vector<vector<int>> need)
+void printNeedMatrix(vector<vector<int>> need, vector<process> processes)
 {
     cout << "Need Matrix:" << endl;
     for (int i = 0; i < need.size(); i++)
     {
-        int totalNeed = 0;
         cout << "P" << i << ": [";
         for (int j = 0; j < need[i].size() - 2; j++)
         {
-            totalNeed += need[i][j];
             cout << need[i][j] << ", ";
         }
-        totalNeed += need[i][need[i].size() - 2];
-        cout << need[i][need[i].size() - 2] << "] \t Total Need: " << totalNeed << endl;
+        cout << need[i][need[i].size() - 2] << "] \t Total Need: " << processes[i].totalNeed << endl;
     }
 }
 
@@ -124,12 +123,130 @@ bool safety(vector<process> processes, vector<vector<int>> allocation, vector<ve
     }
 }
 
-void scheduling()
+struct ComparePriority
 {
-    cout << "Scheduling Algorithm: " << endl;
-    // Implementation of the scheduling algorithm
-    // PriorityScheduling();
+    bool operator()(const process &a, const process &b)
+    {
+        if (a.priority == b.priority)
+            return a.aT > b.aT;         // earlier arrival has higher priority
+        return a.priority > b.priority; // smaller priority number → higher priority
+    }
+};
+
+vector<int> PriorityScheduling(vector<process> &processes, int n)
+{
+    vector<int> completionIndex(n, none);
+    vector<process> sorted = processes;
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n - i - 1; j++)
+        {
+            if (sorted[j].aT > sorted[j + 1].aT)
+            {
+                swap(sorted[j], sorted[j + 1]);
+            }
+        }
+    }
+
+    vector<int> remBT(n);
+    for (int i = 0; i < n; i++)
+    {
+        remBT[i] = sorted[i].bT;
+    }
+
+    priority_queue<process, vector<process>, ComparePriority> readyQueue;
+
+    int time = 0;
+    int idx = 0;
+    int completed = 0;
+    int lastPrintedPid = -1;
+
+    vector<int> timeStamps;
+    bool first = true;
+
+    while (completed < n)
+    {
+        while (idx < n && sorted[idx].aT <= time)
+        {
+            readyQueue.push(sorted[idx]);
+            idx++;
+        }
+
+        if (readyQueue.empty())
+        {
+            if (idx < n)
+            {
+                time = sorted[idx].aT;
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+        process current = readyQueue.top();
+        readyQueue.pop();
+        int pidIdx = -1;
+        for (int i = 0; i < n; i++)
+        {
+            if (sorted[i].pid == current.pid)
+            {
+                pidIdx = i;
+                break;
+            }
+        }
+
+        if (lastPrintedPid != current.pid)
+        {
+            if (first)
+            {
+                cout << "| \tP" << current.pid << "\t |";
+                first = false;
+            }
+            else
+            {
+                cout << " \tP" << current.pid << " \t |";
+            }
+            timeStamps.push_back(time);
+            lastPrintedPid = current.pid;
+        }
+
+        int nextArrival = (idx < n) ? sorted[idx].aT : INT_MAX;
+
+        int timeToFinish = remBT[pidIdx];
+        int timeToNextArrival = nextArrival - time;
+
+        if (timeToNextArrival < timeToFinish)
+        {
+            remBT[pidIdx] -= timeToNextArrival;
+            time = nextArrival;
+            process preempted = current;
+            readyQueue.push(preempted);
+        }
+        else
+        {
+            time += remBT[pidIdx];
+            remBT[pidIdx] = 0;
+            completionIndex[completed] = pidIdx;
+            completed++;
+        }
+    }
+
+    timeStamps.push_back(time);
     paragraph;
+    for (auto i : timeStamps)
+    {
+        cout << i << "\t\t";
+    }
+    paragraph;
+
+    return completionIndex;
+}
+
+vector<int> scheduling(vector<process> &processes, int n)
+{
+    cout << "--- Priority Scheduling ---" << endl;
+    return PriorityScheduling(processes, n);
 }
 
 void LRU(int page, vector<int> &frames, map<int, int> &pageTable, vector<int> &refStr, int i)
@@ -199,7 +316,8 @@ int pageReplacement(vector<int> &frames, map<int, int> &pageTable, vector<int> &
 
 int main()
 {
-    // Banker's Input
+    // Input
+
     int n = 4; // As mentioned in the assignment; p0 -> p3, p4 is for future calculation
     int resourceType = 3;
     vector<process> processes(n + 1);
@@ -234,9 +352,9 @@ int main()
             cin >> allocation[i][j];
 
             need[i][j] = max[i][j] - allocation[i][j];
-        }
 
-        // Calculate Priority somewhere here
+            processes[i].totalNeed += need[i][j];
+        }
     }
 
     for (int i = 0; i < n; i++)
@@ -246,12 +364,37 @@ int main()
         cout << "Enter Burst Time for P" << i << ": ";
         cin >> processes[i].bT;
     }
+
+    int priorityCount = 1;
+    for (int i = 0; i < n; i++)
+    {
+        int highest = n;
+        for (int j = 0; j < n; j++)
+        {
+            if (processes[j].priority == none)
+            {
+                highest = j;
+                break;
+            }
+        }
+        for (int j = 0; j < n; j++)
+        {
+            if (processes[j].priority == none)
+            {
+                if (processes[j].totalNeed > processes[highest].totalNeed)
+                {
+                    highest = j;
+                }
+            }
+        }
+        processes[highest].priority = priorityCount++;
+    }
     paragraph;
 
     cout << "--- Banker's Algorithm ---" << endl;
     paragraph;
 
-    printNeedMatrix(need);
+    printNeedMatrix(need, processes);
 
     paragraph;
 
@@ -259,8 +402,10 @@ int main()
     if (safe)
     {
         cout << "Proceeding to Scheduling..." << endl;
-        scheduling();
-        // pageReplacement(frames, pageTable, refStr);
+        paragraph;
+
+        vector<int> scheduledProcesses = scheduling(processes, n);
+        // pageReplacement(scheduledProcesses);
     }
 
     return 0;
